@@ -22,8 +22,6 @@ Tre esempi per capire cosa deve fare il figlio:
   La riga 3 non esiste, quindi per la riga non fa nulla.
 - Matrice 2x2, f_id = 2: non esistono ne' la riga 2 ne' la colonna 2,
   quindi non fa nulla e non stampa nulla.
-
-Finito l'esercizio, cambiare la variabile n_trials a 10 per eseguire piu' prove.
 */
 
 #define _POSIX_C_SOURCE 200809L
@@ -35,7 +33,6 @@ Finito l'esercizio, cambiare la variabile n_trials a 10 per eseguire piu' prove.
 
 void esegui_figlio(int f_id, const int m[], int r, int c)
 {
-    //TODO
 }
 
 void main_fn(int ordine_figli[])
@@ -58,45 +55,45 @@ void main_fn(int ordine_figli[])
         21, 22, 23, 24, 25
     };
 
-    int pid_figli[5]; // PID del figlio 0, del figlio 1, ecc.
+    // Il codice dei processi e' gia' pronto: completa soltanto la funzione sopra.
+    int pid_figli[5]; // Collega ogni f_id al PID assegnato dal sistema.
 
-    for (int f_id = 0; f_id < 5; f_id++) { 
-        // Crea un figlio per ogni indice da 0 a 4.
-        
+    for (int f_id = 0; f_id < 5; f_id++) {
         // fork crea un processo figlio: padre e figlio continuano da questa chiamata.
         // Nel figlio pid vale 0; nel padre contiene il PID (identificativo) del figlio.
-        // Se pid vale -1, la creazione e' fallita. f_id e' invece il nostro indice 0 -> 4
-
-        int pid = fork();
+        // Se pid vale -1, la creazione e' fallita. f_id e' invece il nostro indice 0..4.
+        int pid = fork(); // Crea un figlio per ogni indice da 0 a 4.
         if (pid == -1) {
             perror("fork");
-            exit(1); // Termina il programma in caso di errore nella creazione del figlio.
+            exit(1);
         }
-        if (pid == 0) {
+        if (pid == 0) { // Solo il figlio entra qui.
             // Le stampe mostrano come si alternano i figli.
             for (int passo = 0; passo < 100; passo++) {
-                printf("Figlio %d: passo %d\n", f_id, passo);
+                // printf("Figlio %d: passo %d\n", f_id, passo);
                 fflush(stdout); // Stampa subito: altrimenti i messaggi possono restare nel buffer e uscire a blocchi.
             }
             
-            //TODO
-
-            printf("Figlio %d terminato\n", f_id);
-            exit(0);
+            // TODO
+            
+            exit(0); // Termina e svuota stdout; non crea altri figli.
         }
-        pid_figli[f_id] = pid; //RACCOLTA PID: Il padre ricorda il PID associato a questo indice.
+        pid_figli[f_id] = pid; // Solo il padre arriva qui e memorizza il PID.
     }
 
     // Il padre aspetta 5 figli. -1 significa "un figlio qualsiasi",
     // NULL ignora il codice di uscita e 0 fa aspettare finche' un figlio termina.
     for (int posizione = 0; posizione < 5; posizione++) {
         int pid_terminato = waitpid(-1, NULL, 0);
+        while (pid_terminato == -1 && errno == EINTR) {
+            pid_terminato = waitpid(-1, NULL, 0); // Riprova se arriva un segnale.
+        }
         if (pid_terminato == -1) {
             perror("waitpid");
             exit(1);
         }
 
-        // RACCOLTA PID:Cerchiamo a quale f_id corrisponde il PID restituito da waitpid.
+        // Cerchiamo a quale f_id corrisponde il PID restituito da waitpid.
         for (int f_id = 0; f_id < 5; f_id++) {
             if (pid_figli[f_id] == pid_terminato) {
                 ordine_figli[posizione] = f_id;
@@ -105,11 +102,24 @@ void main_fn(int ordine_figli[])
         }
     }
 
-    // Queste righe vengono stampate soltanto dal padre, dopo l'attesa.
-    printf("\nAtteso (riga, colonna), in ordine di figlio:\n");
-    printf("2x2: (3, 4), (7, 6)\n");
-    printf("3x4: (10, 15), (26, 18), (42, 21); figlio 3: solo colonna = 24\n");
-    printf("5x5: (15, 55), (40, 60), (65, 65), (90, 70), (115, 75)\n");
+    // Riepilogo dei risultati: i figli possono stampare in ordine diverso.
+    printf("\nRisultati attesi (somme di riga e colonna):\n");
+    printf("Matrice 2x2:\n");
+    printf("  Figlio 0: riga = 3, colonna = 4\n");
+    printf("  Figlio 1: riga = 7, colonna = 6\n");
+    printf("  Figli 2, 3 e 4: nessuna stampa\n");
+    printf("Matrice 3x4:\n");
+    printf("  Figlio 0: riga = 10, colonna = 15\n");
+    printf("  Figlio 1: riga = 26, colonna = 18\n");
+    printf("  Figlio 2: riga = 42, colonna = 21\n");
+    printf("  Figlio 3: solo colonna = 24\n");
+    printf("  Figlio 4: nessuna stampa\n");
+    printf("Matrice 5x5:\n");
+    printf("  Figlio 0: riga = 15, colonna = 55\n");
+    printf("  Figlio 1: riga = 40, colonna = 60\n");
+    printf("  Figlio 2: riga = 65, colonna = 65\n");
+    printf("  Figlio 3: riga = 90, colonna = 70\n");
+    printf("  Figlio 4: riga = 115, colonna = 75\n");
     // L'ordine e' gia' salvato nell'array ricevuto dal main.
 }
 
